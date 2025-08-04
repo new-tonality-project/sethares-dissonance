@@ -1,45 +1,57 @@
-import { getSetharesDissonance, transpose, type Spectrum } from "../lib/utils";
+import {
+  getSetharesDissonance,
+  SETHARES_DISSONANCE_PARAMS,
+  transpose,
+  type SpectrumPartial,
+} from "../lib";
 
-type DissonanceCurveOptions = {
-  context: Spectrum;
-  compliment: Spectrum;
-  precision?: number;
+export type DissonanceCurveOptions = Partial<
+  typeof SETHARES_DISSONANCE_PARAMS
+> & {
+  context: SpectrumPartial[];
+  complement: SpectrumPartial[];
+  step?: number;
   rangeMin?: number;
   rangeMax?: number;
 };
 
 export class DissonanceCurve {
   private _data: Map<number, number> = new Map();
-  private step: number;
 
   public readonly rangeMin: NonNullable<DissonanceCurveOptions["rangeMin"]>;
   public readonly rangeMax: NonNullable<DissonanceCurveOptions["rangeMax"]>;
-  public readonly precision: NonNullable<DissonanceCurveOptions["precision"]>;
+  public readonly step: NonNullable<DissonanceCurveOptions["step"]>;
   public readonly context: DissonanceCurveOptions["context"];
-  public readonly compliment: DissonanceCurveOptions["compliment"];
+  public readonly complement: DissonanceCurveOptions["complement"];
   public readonly maxDissonance: number = 0;
   public readonly change: number = 0;
 
   constructor(opts: DissonanceCurveOptions) {
-    this.context = opts.context;
-    this.compliment = opts.compliment;
+    const {
+      context,
+      complement,
+      rangeMin,
+      rangeMax,
+      step,
+      ...dissonanceParams
+    } = opts;
 
-    this.rangeMin = opts.rangeMin ?? 0;
-    this.rangeMax = opts.rangeMax ?? 1200;
-    this.precision = opts.precision ?? 1;
+    this.context = context;
+    this.complement = complement;
+
+    this.rangeMin = rangeMin ?? 0;
+    this.rangeMax = rangeMax ?? 1200;
+    this.step = step ?? 1;
 
     if (this.rangeMin > this.rangeMax)
       throw Error("rangeMin should be less or equal to rangeMax");
-    if (this.precision <= 0)
-      throw Error("precision should be greater than zero");
-
-    this.step =
-      (this.rangeMax - this.rangeMin) / (this.rangeMax * this.precision);
+    if (this.step <= 0) throw Error("precision should be greater than zero");
 
     for (let cent = this.rangeMin; cent <= this.rangeMax; cent += this.step) {
       const dissonance = getSetharesDissonance(
         this.context,
-        transpose(this.compliment, cent)
+        transpose(this.complement, cent),
+        dissonanceParams
       );
 
       if (dissonance > this.maxDissonance) this.maxDissonance = dissonance;
@@ -50,6 +62,10 @@ export class DissonanceCurve {
 
   public get points() {
     return Array.from(this._data.entries()).sort((a, b) => a[0] - b[0]);
+  }
+
+  public get(cent: number) {
+    return this._data.get(cent);
   }
 
   private getRowString(row: Array<number | string>) {
