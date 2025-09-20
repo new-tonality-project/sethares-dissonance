@@ -2,8 +2,8 @@ import {
   getSetharesDissonance,
   SETHARES_DISSONANCE_PARAMS,
   transpose,
+  SpectrumPartial
 } from "../lib";
-import type { SpectrumPartial } from "../lib";
 
 export type DissonanceCurveOptions = Partial<
   typeof SETHARES_DISSONANCE_PARAMS
