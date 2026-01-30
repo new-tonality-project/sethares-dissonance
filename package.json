@@ -16,5 +16,8 @@
   ],
   "scripts": {
     "build": "npx tsc"
+  },
+  "dependencies": {
+    "fraction.js": "^5.3.4"
   }
 }

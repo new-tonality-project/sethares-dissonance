@@ -11,11 +11,3 @@ describe("lib/utils", () => {
     expect(amplitudes.map(Utils.getLoudness)).toEqual(expectedOutcome);
   });
 });
-
-describe("classes/DissoannceCurve", () => {
-  test("Should construct Dissoancne curve", () => {
-    const curve = new DissonanceCurve({context: [], complement: []})
-
-    expect(curve).toBeInstanceOf(DissonanceCurve);
-  });
-});

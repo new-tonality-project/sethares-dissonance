@@ -1,10 +1,7 @@
-export type SpectrumPartial = {
-    frequency: number;
-    amplitude: number;
-    phase?: number;
-};
+import type { Harmonic, Spectrum } from "../primitives";
+import { DEFAULT_DISSONANCE_PARAMS, NORMALISATION_PRESSURE_UNIT } from "./const";
+import type { DissonanceParams } from "./types";
 
-const NORMALISATION_PRESSURE_UNIT = 2.8284271247461905;
 
 /**
  * The formula to calculate loudness from amplitude. The converstion to SPL (phons) is done according to Sethares in the appendix "How to Draw Dissonance Curves". The converstion to loudness is done according to https://sengpielaudio.com/calculatorSonephon.htm
@@ -22,46 +19,10 @@ export function getLoudness(amplitude: number): number {
     return Math.pow(2, (phons - 40) / 10);
 }
 
-type SecondOrderBeatingTerm = {
-    ratio: number;
-    magnitude: number;
-};
-
-/** Fitting parameters proposed by Sethares in the appendix "How to Draw Dissonance Curves" */
-export const SETHARES_DISSONANCE_PARAMS = {
-    s1: 0.021,
-    s2: 19,
-    b1: 3.5,
-    b2: 5.75,
-    x_star: 0.24,
-    totalContribution: 1,
-};
-export type SetharesDissonanceParams = Partial<
-    typeof SETHARES_DISSONANCE_PARAMS
->;
-
-export const SECOND_ORDER_BEATING_PARAMS = {
-    terms: [] as SecondOrderBeatingTerm[],
-    widthMagnitudeRelationship: 0,
-    totalContribution: 1,
-};
-export type SecondOrderBeatingParams = Partial<
-    typeof SECOND_ORDER_BEATING_PARAMS
->;
-
-export type DissonanceParams = SetharesDissonanceParams & {
-    secondOrderBeating?: SecondOrderBeatingParams;
-};
-
-export const DEFAULT_DISSONANCE_PARAMS = {
-    ...SETHARES_DISSONANCE_PARAMS,
-    secondOrderBeating: SECOND_ORDER_BEATING_PARAMS,
-};
-
 /** The formula to calculate sensory dissoannce proposed by Sethares in the appendix "How to Draw Dissonance Curves" */
 export function getPlompLeveltDissonance(
-    partial1: SpectrumPartial,
-    partial2: SpectrumPartial,
+    h1: Harmonic,
+    h2: Harmonic,
     params?: DissonanceParams
 ): number {
     const x_star = params?.x_star ?? DEFAULT_DISSONANCE_PARAMS.x_star;
@@ -69,22 +30,20 @@ export function getPlompLeveltDissonance(
     const s2 = params?.s2 ?? DEFAULT_DISSONANCE_PARAMS.s2;
     const b1 = params?.b1 ?? DEFAULT_DISSONANCE_PARAMS.b1;
     const b2 = params?.b2 ?? DEFAULT_DISSONANCE_PARAMS.b2;
-
-    if (partial1.frequency === partial2.frequency) return 0;
+    
+    if (h1.frequency.equals(h2.frequency)) return 0;
 
     const minLoudness = Math.min(
-        getLoudness(partial1.amplitude),
-        getLoudness(partial2.amplitude)
+        getLoudness(h1.amplitude),
+        getLoudness(h2.amplitude)
     );
     if (minLoudness <= 0) return 0;
 
-    const minFrequency = Math.min(partial1.frequency, partial2.frequency);
+    const minFrequency = Math.min(h1.frequencyNum, h2.frequencyNum);
+
     if (minFrequency <= 0) return 0;
 
-    const frequencyDifference = Math.abs(
-        partial1.frequency - partial2.frequency
-    );
-
+    const frequencyDifference = Math.abs(h1.frequencyNum - h2.frequencyNum);
     const s = x_star / (s1 * minFrequency + s2);
 
     return (
@@ -94,9 +53,102 @@ export function getPlompLeveltDissonance(
     );
 }
 
+/**
+ * Calculate the intrinsic dissonance of a spectrum.
+ */
+export function getIntrinsicDissonance(
+    spectrum: Spectrum,
+    params?: DissonanceParams
+) {
+    const totalContribution =
+        params?.totalContribution ??
+        DEFAULT_DISSONANCE_PARAMS.totalContribution;
+    const secondOrderBeatingContribution =
+        params?.secondOrderBeating?.totalContribution ??
+        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
+
+    let dissonance = 0;
+
+    const frequencies = spectrum.getKeys();
+
+    // loop over all pairs of harmonics within the spectrum (not including reversed pairs)
+    for (let i = 0; i < frequencies.length; i++) {
+        for (let j = i + 1; j < frequencies.length; j++) {
+            const h1 = spectrum.get(frequencies[i]!)!;
+            const h2 = spectrum.get(frequencies[j]!)!;
+
+            if (totalContribution) {
+                dissonance +=
+                    totalContribution *
+                    getPlompLeveltDissonance(h1, h2, params);
+            }
+
+            if (secondOrderBeatingContribution) {
+                dissonance +=
+                    secondOrderBeatingContribution *
+                    getSecondOrderBeatingDissonance(h1, h2, params);
+            }
+        }
+    }
+
+    return dissonance;
+}
+
+/**
+ * Calculate the dissonance between two spectra.
+ * This is the sum of the intrinsic dissonance of each spectrum 
+ * plus the dissonance between the harmonics of the two spectra.
+ * 
+ * Note: If not proviing secondOrderBeating params is yield the same result as Sethares' TTSS formula.
+ * However secondOrderBeating params can be used to finetune the dissoannce perception and account for harmonicity.
+ */
+export function getSetharesDissonance(
+    spectrum1: Spectrum,
+    spectrum2: Spectrum,
+    params?: DissonanceParams
+) {
+    const totalContribution =
+        params?.totalContribution ??
+        DEFAULT_DISSONANCE_PARAMS.totalContribution;
+    const secondOrderBeatingContribution =
+        params?.secondOrderBeating?.totalContribution ??
+        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
+
+    let dissonance =
+        getIntrinsicDissonance(spectrum1, params) +
+        getIntrinsicDissonance(spectrum2, params);
+
+    const frequencies1 = spectrum1.getKeys();
+    const frequencies2 = spectrum2.getKeys();
+
+    // loop over all pairs of harmonics between the two spectra (not including reversed pairs)
+    for (let i = 0; i < frequencies1.length; i++) {
+        for (let j = 0; j < frequencies2.length; j++) {
+            const h1 = spectrum1.get(frequencies1[i]!)!;
+            const h2 = spectrum2.get(frequencies2[j]!)!;
+
+            if (totalContribution) {
+                dissonance +=
+                    totalContribution *
+                    getPlompLeveltDissonance(h1, h2, params);
+            }
+            if (secondOrderBeatingContribution) {
+                dissonance +=
+                    secondOrderBeatingContribution *
+                    getSecondOrderBeatingDissonance(h1, h2, params);
+            }
+        }
+    }
+
+    return dissonance;
+}
+
+/**
+ * Helper function to calculate the second order beating dissonance between two harmonics.
+ */
 export function getSecondOrderBeatingDissonance(
-    partial1: SpectrumPartial,
-    partial2: SpectrumPartial,
+    h1: Harmonic,
+    h2: Harmonic,
     params?: DissonanceParams
 ): number {
     const x_star = params?.x_star ?? DEFAULT_DISSONANCE_PARAMS.x_star;
@@ -114,15 +166,14 @@ export function getSecondOrderBeatingDissonance(
     let dissonance = 0;
 
     const minLoudness = Math.min(
-        getLoudness(partial1.amplitude),
-        getLoudness(partial2.amplitude)
+        getLoudness(h1.amplitude),
+        getLoudness(h2.amplitude)
     );
-    if (minLoudness <= 0) return 0;
 
-    const minFrequency = Math.min(partial1.frequency, partial2.frequency);
+    const minFrequency = Math.min(h1.frequencyNum, h2.frequencyNum);
     if (minFrequency <= 0) return 0;
 
-    const maxFrequency = Math.max(partial1.frequency, partial2.frequency);
+    const maxFrequency = Math.max(h1.frequencyNum, h2.frequencyNum);
 
     for (const term of terms) {
         if (term.ratio === 1 || term.ratio <= 0) continue;
@@ -140,97 +191,4 @@ export function getSecondOrderBeatingDissonance(
     }
 
     return dissonance;
-}
-
-export function getIntrinsicDissonance(
-    spectrum: SpectrumPartial[],
-    params?: DissonanceParams
-) {
-    const totalContribution =
-        params?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.totalContribution;
-    const secondOrderBeatingContribution =
-        params?.secondOrderBeating?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
-
-    let dissonance = 0;
-
-    for (let i = 0; i < spectrum.length; i++) {
-        for (let j = i + 1; j < spectrum.length; j++) {
-            const partial1 = spectrum[i]!;
-            const partial2 = spectrum[j]!;
-
-            if (totalContribution) {
-                dissonance +=
-                    totalContribution *
-                    getPlompLeveltDissonance(partial1, partial2, params);
-            }
-
-            if (secondOrderBeatingContribution) {
-                dissonance +=
-                    secondOrderBeatingContribution *
-                    getSecondOrderBeatingDissonance(partial1, partial2, params);
-            }
-        }
-    }
-
-    return dissonance;
-}
-
-export function getSetharesDissonance(
-    spectrum1: SpectrumPartial[],
-    spectrum2: SpectrumPartial[],
-    params?: DissonanceParams
-) {
-    const totalContribution =
-        params?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.totalContribution;
-    const secondOrderBeatingContribution =
-        params?.secondOrderBeating?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
-
-    let dissonance =
-        getIntrinsicDissonance(spectrum1, params) +
-        getIntrinsicDissonance(spectrum2, params);
-
-    for (let i = 0; i < spectrum1.length; i++) {
-        for (let j = 0; j < spectrum2.length; j++) {
-            const partial1 = spectrum1[i]!;
-            const partial2 = spectrum2[j]!;
-
-            if (totalContribution) {
-                dissonance +=
-                    totalContribution *
-                    getPlompLeveltDissonance(partial1, partial2, params);
-            }
-            if (secondOrderBeatingContribution) {
-                dissonance +=
-                    secondOrderBeatingContribution *
-                    getSecondOrderBeatingDissonance(partial1, partial2, params);
-            }
-        }
-    }
-
-    return dissonance;
-}
-
-export function ratioToCents(ratio: number): number {
-    return ratio > 0 ? 1200 * Math.log2(ratio) : 0;
-}
-
-export function centsToRatio(cents: number): number {
-    return Math.pow(2, cents / 1200);
-}
-
-export function transpose(partials: SpectrumPartial[], cents: number) {
-    const result: SpectrumPartial[] = [];
-
-    for (const partial of partials) {
-        result.push({
-            frequency: partial.frequency * centsToRatio(cents),
-            amplitude: partial.amplitude,
-        });
-    }
-
-    return result;
 }
