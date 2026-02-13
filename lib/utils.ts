@@ -1,4 +1,4 @@
-import type { Harmonic, Spectrum } from "../primitives";
+import type { Harmonic, Spectrum } from "tuning-core";
 import { DEFAULT_DISSONANCE_PARAMS, NORMALISATION_PRESSURE_UNIT } from "./const";
 import type { DissonanceParams } from "./types";
 

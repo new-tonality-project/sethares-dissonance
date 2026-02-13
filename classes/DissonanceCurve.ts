@@ -5,8 +5,7 @@ import {
     type DissonanceCurvePoint,
     type DissonanceCurveData,
 } from "../lib";
-import { ratioToCents, Spectrum } from "../primitives";
-import { IntervalSet } from "../primitives/IntervalSet";
+import { ratioToCents, Spectrum, IntervalSet } from "tuning-core";
 
 const DEFAULT_COLUMN_DELIMITER = ",";
 const DEFAULT_ROW_DELIMITER = "\n";

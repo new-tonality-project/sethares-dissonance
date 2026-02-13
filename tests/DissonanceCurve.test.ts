@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import Fraction from "fraction.js";
-import { DissonanceCurve } from "./DissonanceCurve";
-import { Spectrum } from "../primitives";
+import { DissonanceCurve } from "../classes";
+import { Spectrum } from "tuning-core";
 
 function createTestCurve() {
   const context = Spectrum.harmonic(6, 440);

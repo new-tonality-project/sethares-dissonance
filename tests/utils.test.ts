@@ -1,7 +1,6 @@
 import { expect, test, describe } from "bun:test";
 
 import * as Utils from "../lib/utils";
-import { DissonanceCurve } from "../classes";
 
 describe("lib/utils", () => {
   test("Should calculate loudness", () => {

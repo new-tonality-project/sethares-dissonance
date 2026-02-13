@@ -5,6 +5,7 @@
       "name": "sethares-dissonance",
       "dependencies": {
         "fraction.js": "^5.3.4",
+        "tuning-core": "^1.0.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -22,6 +23,8 @@
     "bun-types": ["bun-types@1.2.16", "", { "dependencies": { "@types/node": "*" } }, "sha512-ciXLrHV4PXax9vHvUrkvun9VPVGOVwbbbBF/Ev1cXz12lyEZMoJpIJABOfPcN9gDJRaiKF9MVbSygLg4NXu3/A=="],
 
     "fraction.js": ["fraction.js@5.3.4", "", {}, "sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ=="],
+
+    "tuning-core": ["tuning-core@1.0.0", "", { "dependencies": { "fraction.js": "^5.3.4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-0dPf36hMkjdQT6phOQEBl1twPKf61XaUG8J6gBQRkdd/XrfIO49l4J8u2iBHH0fW3MN/3U/+kQG4wDicwNMf9Q=="],
 
     "typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
