@@ -1,7 +1,6 @@
 {
   "name": "sethares-dissonance",
-  "version": "2.0.0",
-  "module": "index.ts",
+  "version": "2.0.1",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
@@ -9,6 +8,7 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "module": "dist/index.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -20,6 +20,6 @@
   },
   "dependencies": {
     "fraction.js": "^5.3.4",
-    "tuning-core": "^1.0.0"
+    "tuning-core": "^1.0.3"
   }
 }
