@@ -16,10 +16,10 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "publish": "npx tsc && bun publish --access public"
+    "release": "./release.sh"
   },
   "dependencies": {
     "fraction.js": "^5.3.4",
-    "tuning-core": "^1.0.3"
+    "tuning-core": "^1.1.0"
   }
 }
