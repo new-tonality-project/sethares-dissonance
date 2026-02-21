@@ -1,5 +1,6 @@
 import type Fraction from "fraction.js";
 import type { SECOND_ORDER_BEATING_PARAMS, SETHARES_DISSONANCE_PARAMS } from "./const";
+import type { DissonanceCurve } from "../classes";
 
 export type SecondOrderBeatingTerm = {
   ratio: number;

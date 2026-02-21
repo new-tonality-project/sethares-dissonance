@@ -1,11 +1,11 @@
 import { Fraction, type FractionInput } from "fraction.js";
-import {
-    getSetharesDissonance,
-    type DissonanceParams,
-    type DissonanceCurvePoint,
-    type DissonanceCurveData,
-} from "../lib";
 import { ratioToCents, Spectrum, IntervalSet } from "tuning-core";
+import type {
+    DissonanceParams,
+    DissonanceCurvePoint,
+    DissonanceCurveData,
+} from "../lib";
+import { getSetharesDissonance } from "../lib";
 
 const DEFAULT_COLUMN_DELIMITER = ",";
 const DEFAULT_ROW_DELIMITER = "\n";
@@ -52,11 +52,11 @@ export type DissonanceCurveOptions = DissonanceParams & {
 export class DissonanceCurve {
     private _data: Map<string, DissonanceCurvePoint> = new Map();
 
-    public readonly start: Fraction;
-    public readonly end: Fraction;
-    public readonly context: Spectrum;
-    public readonly complement: Spectrum;
-    public readonly maxDissonance: number = 0;
+    public start: Fraction;
+    public end: Fraction;
+    public context: Spectrum;
+    public complement: Spectrum;
+    public maxDissonance: number = 0;
 
     constructor(opts: DissonanceCurveOptions) {
         const {
@@ -70,14 +70,52 @@ export class DissonanceCurve {
 
         this.context = context;
         this.complement = complement;
-
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
 
         if (this.start.compare(this.end) > 0)
             throw Error("startCents should be less or equal to endCents");
 
-        const intervals = IntervalSet.affinitive(this.context, this.complement).densify(20)
+        this.build(dissonanceParams);
+    }
+
+    /**
+     * Recalculate the dissonance curve with new options.
+     * Updates the curve in place.
+     */
+    public recalculate(opts: DissonanceCurveOptions): void {
+        const {
+            context,
+            complement,
+            start,
+            end,
+            maxDenominator,
+            ...dissonanceParams
+        } = opts;
+
+        this.context = context;
+        this.complement = complement;
+        this.start = new Fraction(start ?? 1);
+        this.end = new Fraction(end ?? 2);
+
+        if (this.start.compare(this.end) > 0)
+            throw Error("startCents should be less or equal to endCents");
+
+        this.build(dissonanceParams);
+    }
+
+    /**
+     * Build _data from public props (context, complement, start, end).
+     */
+    private build(dissonanceParams: DissonanceParams): void {
+        this._data.clear();
+        let maxDissonance = 0;
+
+        const intervals = IntervalSet.affinitive(
+            this.context.size > 1 ? this.context : Spectrum.harmonic(2, 1),
+            this.complement.size > 1 ? this.complement : Spectrum.harmonic(2, 1),
+        ).densify(20);
+
         const ratios = intervals.getRatios();
 
         for (let i = 0; i < ratios.length; i++) {
@@ -89,11 +127,12 @@ export class DissonanceCurve {
                 dissonanceParams
             );
 
-            if (dissonance > this.maxDissonance)
-                this.maxDissonance = dissonance;
+            if (dissonance > maxDissonance) maxDissonance = dissonance;
 
             this._data.set(interval.toFraction(), { interval, dissonance });
         }
+
+        this.maxDissonance = maxDissonance;
     }
 
     /**
@@ -230,6 +269,4 @@ export class DissonanceCurve {
 
         return points[left] ?? points[points.length - 1]!;
     }
-    // TODO: find closest point by cents
-    // TODO: recalculate on parameters change
 }
