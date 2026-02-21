@@ -79,26 +79,22 @@ import {
 import type { ReadOnlyDissonanceCurve } from "sethares-dissonance";
 
 /**
- * Read-only view of DissonanceCurve without the recalculate method.
+ * Read-only view of DissonanceCurve without the methods that cause mutation.
  * Use this type when exposing the curve from hooks to prevent external mutation.
  */
-export type ReadOnlyDissonanceCurve = Partial<Omit<
+type ReadOnlyDissonanceCurve = Omit<
   DissonanceCurve,
   "recalculate"
->>;
+>;
 
-function createReadOnlyWrapper(
-    curve: DissonanceCurve,
-): ReadOnlyDissonanceCurve {
-    
-    return {
-        get maxDissonance() {
-            return curve.maxDissonance;
-        },
-        plotCents: () => curve.plotCents(),
-        findNearestPoint: (ratio) => curve.findNearestPoint(ratio),
-        // .. can add more methods if needed, aboid those that cause mutations
-    };
+function createReadOnlyWrapper(curve: DissonanceCurve) {
+  return {
+    get maxDissonance() {
+      return curve.maxDissonance
+    },
+    plotCents: () => curve.plotCents()
+    // ... can map more methods if needed
+  } satisfies Partial<ReadOnlyDissonanceCurve>
 }
 
 export function useDissonanceCurve(
