@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "release": "./release.sh"
+    "release": "./release.sh",
+    "bench": "bun run benches/dissonance-curve.bench.ts"
   },
   "dependencies": {
     "fraction.js": "^5.3.4",
