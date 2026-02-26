@@ -1,6 +1,8 @@
-import type { Harmonic, Spectrum } from "tuning-core";
-import { DEFAULT_DISSONANCE_PARAMS, NORMALISATION_PRESSURE_UNIT } from "./const";
-import type { DissonanceParams } from "./types";
+import type { Harmonic } from "tuning-core";
+import { NORMALISATION_PRESSURE_UNIT, SETHARES_DISSONANCE_PARAMS } from "./const";
+import type { DissonanceParams, SetharesDissonanceParams } from "./types";
+import type { ExtendedHarmonic } from "../classes/private/ExtendedHarmonic";
+import { ExtendedSpectrum } from "../classes/private/ExtendedSpectrum";
 
 
 /**
@@ -23,14 +25,20 @@ export function getLoudness(amplitude: number): number {
 export function getPlompLeveltDissonance(
     h1: Harmonic,
     h2: Harmonic,
-    params?: DissonanceParams
+    params?: SetharesDissonanceParams & {
+        contribution?: number;
+    }
 ): number {
-    const x_star = params?.x_star ?? DEFAULT_DISSONANCE_PARAMS.x_star;
-    const s1 = params?.s1 ?? DEFAULT_DISSONANCE_PARAMS.s1;
-    const s2 = params?.s2 ?? DEFAULT_DISSONANCE_PARAMS.s2;
-    const b1 = params?.b1 ?? DEFAULT_DISSONANCE_PARAMS.b1;
-    const b2 = params?.b2 ?? DEFAULT_DISSONANCE_PARAMS.b2;
-    
+    const contribution = params?.contribution ?? 1;
+
+    if (contribution <= 0) return 0;
+
+    const x_star = params?.x_star ?? SETHARES_DISSONANCE_PARAMS.x_star;
+    const s1 = params?.s1 ?? SETHARES_DISSONANCE_PARAMS.s1;
+    const s2 = params?.s2 ?? SETHARES_DISSONANCE_PARAMS.s2;
+    const b1 = params?.b1 ?? SETHARES_DISSONANCE_PARAMS.b1;
+    const b2 = params?.b2 ?? SETHARES_DISSONANCE_PARAMS.b2;
+
     if (h1.frequency.equals(h2.frequency)) return 0;
 
     const minLoudness = Math.min(
@@ -47,47 +55,78 @@ export function getPlompLeveltDissonance(
     const s = x_star / (s1 * minFrequency + s2);
 
     return (
+        contribution *
         minLoudness *
         (Math.exp(-1 * b1 * s * frequencyDifference) -
             Math.exp(-1 * b2 * s * frequencyDifference))
     );
 }
 
+/** For now identical to getPlompLeveltDissonance */
+function firstOrderDissonance(
+    h1: Harmonic,
+    h2: Harmonic,
+    params?: DissonanceParams
+): number {
+    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.firstOrderContribution });
+}
+
+/** For now identical to getPlompLeveltDissonance */
+function secondOrderDissonance(
+    h1: Harmonic,
+    h2: Harmonic,
+    params?: DissonanceParams
+): number {
+    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.secondOrderContribution });
+}
+
+/** For now identical to getPlompLeveltDissonance */
+function thirdOrderDissonance(
+    h1: Harmonic,
+    h2: Harmonic,
+    params?: DissonanceParams
+): number {
+    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.thirdOrderContribution });
+}
+
+/**
+ * Find dissonance between two harmonics based on phantom status.
+ * - Both non-phantom: firstOrderDissonance
+ * - One phantom, one non-phantom: secondOrderDissonance
+ * - Both phantom: thirdOrderDissonance
+ */
+export function getSensoryDissonance(
+    h1: ExtendedHarmonic,
+    h2: ExtendedHarmonic,
+    params?: DissonanceParams
+): number {
+    if (!h1.phantom && !h2.phantom) {
+        return firstOrderDissonance(h1, h2, params);
+    }
+    if (h1.phantom !== h2.phantom) {
+        return secondOrderDissonance(h1, h2, params);
+    }
+    return thirdOrderDissonance(h1, h2, params);
+}
+
 /**
  * Calculate the intrinsic dissonance of a spectrum.
  */
 export function getIntrinsicDissonance(
-    spectrum: Spectrum,
+    spectrum: ExtendedSpectrum,
     params?: DissonanceParams
 ) {
-    const totalContribution =
-        params?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.totalContribution;
-    const secondOrderBeatingContribution =
-        params?.secondOrderBeating?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
-
     let dissonance = 0;
 
-    const frequencies = spectrum.getKeys();
+    const harmonics = spectrum.getHarmonics();
 
     // loop over all pairs of harmonics within the spectrum (not including reversed pairs)
-    for (let i = 0; i < frequencies.length; i++) {
-        for (let j = i + 1; j < frequencies.length; j++) {
-            const h1 = spectrum.get(frequencies[i]!)!;
-            const h2 = spectrum.get(frequencies[j]!)!;
+    for (let i = 0; i < harmonics.length; i++) {
+        for (let j = i + 1; j < harmonics.length; j++) {
+            const h1 = harmonics[i]!;
+            const h2 = harmonics[j]!;
 
-            if (totalContribution) {
-                dissonance +=
-                    totalContribution *
-                    getPlompLeveltDissonance(h1, h2, params);
-            }
-
-            if (secondOrderBeatingContribution) {
-                dissonance +=
-                    secondOrderBeatingContribution *
-                    getSecondOrderBeatingDissonance(h1, h2, params);
-            }
+            dissonance += getSensoryDissonance(h1, h2, params);
         }
     }
 
@@ -103,91 +142,17 @@ export function getIntrinsicDissonance(
  * However secondOrderBeating params can be used to finetune the dissoannce perception and account for harmonicity.
  */
 export function getSetharesDissonance(
-    spectrum1: Spectrum,
-    spectrum2: Spectrum,
+    spectrum1: ExtendedSpectrum,
+    spectrum2: ExtendedSpectrum,
     params?: DissonanceParams
 ) {
-    const totalContribution =
-        params?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.totalContribution;
-    const secondOrderBeatingContribution =
-        params?.secondOrderBeating?.totalContribution ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating?.totalContribution;
-
-    let dissonance =
-        getIntrinsicDissonance(spectrum1, params) +
-        getIntrinsicDissonance(spectrum2, params);
-
-    const frequencies1 = spectrum1.getKeys();
-    const frequencies2 = spectrum2.getKeys();
+    let dissonance = getIntrinsicDissonance(spectrum1, params) + getIntrinsicDissonance(spectrum2, params);
 
     // loop over all pairs of harmonics between the two spectra (not including reversed pairs)
-    for (let i = 0; i < frequencies1.length; i++) {
-        for (let j = 0; j < frequencies2.length; j++) {
-            const h1 = spectrum1.get(frequencies1[i]!)!;
-            const h2 = spectrum2.get(frequencies2[j]!)!;
-
-            if (totalContribution) {
-                dissonance +=
-                    totalContribution *
-                    getPlompLeveltDissonance(h1, h2, params);
-            }
-            if (secondOrderBeatingContribution) {
-                dissonance +=
-                    secondOrderBeatingContribution *
-                    getSecondOrderBeatingDissonance(h1, h2, params);
-            }
+    for (const h1 of spectrum1.getHarmonics()) {
+        for (const h2 of spectrum2.getHarmonics()) {
+            dissonance += getSensoryDissonance(h1, h2, params);
         }
-    }
-
-    return dissonance;
-}
-
-/**
- * Helper function to calculate the second order beating dissonance between two harmonics.
- */
-export function getSecondOrderBeatingDissonance(
-    h1: Harmonic,
-    h2: Harmonic,
-    params?: DissonanceParams
-): number {
-    const x_star = params?.x_star ?? DEFAULT_DISSONANCE_PARAMS.x_star;
-    const s1 = params?.s1 ?? DEFAULT_DISSONANCE_PARAMS.s1;
-    const s2 = params?.s2 ?? DEFAULT_DISSONANCE_PARAMS.s2;
-    const b1 = params?.b1 ?? DEFAULT_DISSONANCE_PARAMS.b1;
-    const b2 = params?.b2 ?? DEFAULT_DISSONANCE_PARAMS.b2;
-    const widthMagnitudeRelationship =
-        params?.secondOrderBeating?.widthMagnitudeRelationship ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating.widthMagnitudeRelationship;
-    const terms =
-        params?.secondOrderBeating?.terms ??
-        DEFAULT_DISSONANCE_PARAMS.secondOrderBeating.terms;
-
-    let dissonance = 0;
-
-    const minLoudness = Math.min(
-        getLoudness(h1.amplitude),
-        getLoudness(h2.amplitude)
-    );
-
-    const minFrequency = Math.min(h1.frequencyNum, h2.frequencyNum);
-    if (minFrequency <= 0) return 0;
-
-    const maxFrequency = Math.max(h1.frequencyNum, h2.frequencyNum);
-
-    for (const term of terms) {
-        if (term.ratio === 1 || term.ratio <= 0) continue;
-
-        const difference = Math.abs(minFrequency * term.ratio - maxFrequency);
-
-        const s = x_star / (s1 * minFrequency + s2);
-        const widthModifier = 1 - widthMagnitudeRelationship * term.magnitude;
-
-        dissonance +=
-            term.magnitude *
-            minLoudness *
-            (Math.exp((-1 * b1 * s * difference) / widthModifier) -
-                Math.exp((-1 * b2 * s * difference) / widthModifier));
     }
 
     return dissonance;

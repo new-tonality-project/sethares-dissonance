@@ -6,6 +6,7 @@ import type {
     DissonanceCurveData,
 } from "../lib";
 import { getSetharesDissonance } from "../lib";
+import { ExtendedSpectrum } from "./private/ExtendedSpectrum";
 
 const DEFAULT_COLUMN_DELIMITER = ",";
 const DEFAULT_ROW_DELIMITER = "\n";
@@ -13,7 +14,6 @@ const DEFAULT_ROW_DELIMITER = "\n";
 export type DissonanceCurveOptions = DissonanceParams & {
     context: Spectrum;
     complement: Spectrum;
-    maxDenominator?: number;
     start?: FractionInput;
     end?: FractionInput;
 };
@@ -54,8 +54,8 @@ export class DissonanceCurve {
 
     public start: Fraction;
     public end: Fraction;
-    public context: Spectrum;
-    public complement: Spectrum;
+    public context: ExtendedSpectrum;
+    public complement: ExtendedSpectrum;
     public maxDissonance: number = 0;
 
     constructor(opts: DissonanceCurveOptions) {
@@ -64,12 +64,13 @@ export class DissonanceCurve {
             complement,
             start,
             end,
-            maxDenominator,
             ...dissonanceParams
         } = opts;
 
-        this.context = context;
-        this.complement = complement;
+        const phantomHarmonics = ExtendedSpectrum.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+
+        this.context = new ExtendedSpectrum(context).mul(phantomHarmonics);
+        this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
 
@@ -89,12 +90,13 @@ export class DissonanceCurve {
             complement,
             start,
             end,
-            maxDenominator,
             ...dissonanceParams
         } = opts;
 
-        this.context = context;
-        this.complement = complement;
+        const phantomHarmonics = ExtendedSpectrum.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+
+        this.context = new ExtendedSpectrum(context).mul(phantomHarmonics);
+        this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
 
@@ -104,6 +106,26 @@ export class DissonanceCurve {
         this.build(dissonanceParams);
     }
 
+    private getIntervals(): IntervalSet {
+        const affinitive = IntervalSet.affinitive(
+            this.context,
+            this.complement,
+        ).add(this.start).add(this.end);
+
+        // TODO: add handling of start and end ratios to IntervalSet method
+
+        affinitive.forEach((interval) => {
+            if (interval.compare(this.start) < 0) {
+                affinitive.delete(interval);
+            }
+            if (interval.compare(this.end) > 0) {
+                affinitive.delete(interval);
+            }
+        });
+
+        return affinitive.densify(20);
+    }
+
     /**
      * Build _data from public props (context, complement, start, end).
      */
@@ -111,11 +133,7 @@ export class DissonanceCurve {
         this._data.clear();
         let maxDissonance = 0;
 
-        const intervals = IntervalSet.affinitive(
-            this.context.size > 1 ? this.context : Spectrum.harmonic(2, 1),
-            this.complement.size > 1 ? this.complement : Spectrum.harmonic(2, 1),
-        ).densify(20);
-
+        const intervals = this.getIntervals();
         const ratios = intervals.getRatios();
 
         for (let i = 0; i < ratios.length; i++) {

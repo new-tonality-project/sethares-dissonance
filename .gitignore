@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # release script
 release.sh
+
+# manual testing
+manual-testing
