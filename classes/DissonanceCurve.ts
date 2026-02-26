@@ -1,5 +1,6 @@
 import { Fraction, type FractionInput } from "fraction.js";
 import { ratioToCents, Spectrum, IntervalSet } from "tuning-core";
+import { ExtendedIntervalSet } from "./private/ExtendedIntervalSet";
 import type {
     DissonanceParams,
     DissonanceCurvePoint,
@@ -16,6 +17,7 @@ export type DissonanceCurveOptions = DissonanceParams & {
     complement: Spectrum;
     start?: FractionInput;
     end?: FractionInput;
+    maxGapCents?: number;
 };
 
 /**
@@ -56,6 +58,7 @@ export class DissonanceCurve {
     public end: Fraction;
     public context: ExtendedSpectrum;
     public complement: ExtendedSpectrum;
+    public maxGapCents: number;
     public maxDissonance: number = 0;
 
     constructor(opts: DissonanceCurveOptions) {
@@ -64,6 +67,7 @@ export class DissonanceCurve {
             complement,
             start,
             end,
+            maxGapCents = 20,
             ...dissonanceParams
         } = opts;
 
@@ -73,6 +77,7 @@ export class DissonanceCurve {
         this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
+        this.maxGapCents = maxGapCents;
 
         if (this.start.compare(this.end) > 0)
             throw Error("startCents should be less or equal to endCents");
@@ -90,6 +95,7 @@ export class DissonanceCurve {
             complement,
             start,
             end,
+            maxGapCents = 20,
             ...dissonanceParams
         } = opts;
 
@@ -99,6 +105,7 @@ export class DissonanceCurve {
         this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
+        this.maxGapCents = maxGapCents;
 
         if (this.start.compare(this.end) > 0)
             throw Error("startCents should be less or equal to endCents");
@@ -107,23 +114,10 @@ export class DissonanceCurve {
     }
 
     private getIntervals(): IntervalSet {
-        const affinitive = IntervalSet.affinitive(
-            this.context,
-            this.complement,
-        ).add(this.start).add(this.end);
+        const intervals = IntervalSet.affinitive(this.context, this.complement)
+            .minMax(this.start, this.end)
 
-        // TODO: add handling of start and end ratios to IntervalSet method
-
-        affinitive.forEach((interval) => {
-            if (interval.compare(this.start) < 0) {
-                affinitive.delete(interval);
-            }
-            if (interval.compare(this.end) > 0) {
-                affinitive.delete(interval);
-            }
-        });
-
-        return affinitive.densify(20);
+        return new ExtendedIntervalSet(intervals.getRatios()).interpolateLog(this.maxGapCents);
     }
 
     /**
