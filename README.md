@@ -15,20 +15,27 @@ npm install sethares-dissonance
 ## Usage
 
 ```ts
-import { DissonanceCurve, Spectrum } from "sethares-dissonance";
+import { DissonanceCurve } from "sethares-dissonance";
+import { Spectrum } from "tuning-core";
 
-const context = Spectrum.harmonicSeries(10, 440);
-const complement = Spectrum.harmonicSeries(10, 440);
+const context = Spectrum.harmonic(10, 440);
+const complement = Spectrum.harmonic(10, 440);
 
 const curve = new DissonanceCurve({
     context,
     complement,
     start: 1,
     end: 2,
+    maxGapCents: 20,
+    firstOrderContribution: 1,
+    secondOrderContribution: 0.25,
+    thirdOrderContribution: 0.1,
+    phantomHarmonicsNumber: 3,
 });
 
 const points = curve.points;
-const plotData = curve.plot();
+const plotData = curve.plot();        // [ratio, dissonance] tuples
+const plotDataCents = curve.plotCents();  // [cents, dissonance] tuples
 ```
 
 ## React
@@ -41,7 +48,7 @@ Create a fresh `DissonanceCurve` whenever options change. `useMemo` ensures a ne
 
 ```tsx
 import { useMemo } from "react";
-import { DissonanceCurve, Spectrum } from "sethares-dissonance";
+import { DissonanceCurve } from "sethares-dissonance";
 
 function DissonanceChart({ context, complement, start = 1, end = 2 }) {
     const curve = useMemo(
@@ -51,7 +58,11 @@ function DissonanceChart({ context, complement, start = 1, end = 2 }) {
                 complement,
                 start,
                 end,
-                maxDenominator: 60,
+                maxGapCents: 20,
+                firstOrderContribution: 1,
+                secondOrderContribution: 0.25,
+                thirdOrderContribution: 0.1,
+                phantomHarmonicsNumber: 3,
             }),
         [context, complement, start, end],
     );

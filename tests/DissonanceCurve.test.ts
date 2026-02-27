@@ -6,12 +6,17 @@ import { Spectrum } from "tuning-core";
 function createTestCurve() {
   const context = Spectrum.harmonic(6, 440);
   const complement = Spectrum.harmonic(6, 440);
+  
   return new DissonanceCurve({
-    context,
-    complement,
-    start: 1,
-    end: 2,
-    maxDenominator: 60,
+      context,
+      complement,
+      start: 1,
+      end: 2,
+      firstOrderContribution: 1,
+      secondOrderContribution: 0.3,
+      thirdOrderContribution: 0.1,
+      phantomHarmonicsNumber: 2,
+      maxGapCents: 20,
   });
 }
 
