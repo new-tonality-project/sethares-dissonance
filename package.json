@@ -21,6 +21,6 @@
   },
   "dependencies": {
     "fraction.js": "^5.3.4",
-    "tuning-core": "^1.1.0"
+    "tuning-core": "^1.2.0"
   }
 }

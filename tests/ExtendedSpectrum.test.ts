@@ -1,21 +1,21 @@
 import { describe, test, expect } from "bun:test";
-import { ExtendedSpectrum } from "../classes/private/ExtendedSpectrum";
+import { SpectrumWithLoudness } from "../classes/private/SpectrumWithLoudness";
 
-const sine = new ExtendedSpectrum([
+const sine = new SpectrumWithLoudness([
   { frequency: { n: 100, d: 1 }, amplitude: 1, phase: 0, phantom: false },
 ]);
-const hSeries = new ExtendedSpectrum([
+const hSeries = new SpectrumWithLoudness([
   { frequency: { n: 100, d: 1 }, amplitude: 1, phase: 0, phantom: false },
   { frequency: { n: 200, d: 1 }, amplitude: 0.5, phase: 0, phantom: false },
   { frequency: { n: 300, d: 1 }, amplitude: 0.25, phase: 0, phantom: false },
 ]);
-const phantomSeries = new ExtendedSpectrum([
+const phantomSeries = new SpectrumWithLoudness([
   { frequency: { n: 1, d: 1 }, amplitude: 1, phase: 0, phantom: true },
   { frequency: { n: 2, d: 1 }, amplitude: 0.5, phase: 0, phantom: true },
   { frequency: { n: 3, d: 1 }, amplitude: 0.25, phase: 0, phantom: true },
 ]);
 
-describe("ExtendedSpectrum.mul", () => {
+describe("SpectrumWithLoudness.mul", () => {
   describe("basic multiplication", () => {
     test("sine × hSeries multiplies correctly", () => {
       const result = sine.mul(hSeries);
@@ -72,7 +72,7 @@ describe("ExtendedSpectrum.mul", () => {
 
   describe("collision: non-phantom wins", () => {
     test("non-phantom replaces phantom when frequencies collide", () => {
-      const mixed = new ExtendedSpectrum([
+      const mixed = new SpectrumWithLoudness([
         { frequency: { n: 1, d: 1 }, amplitude: 1, phase: 0, phantom: false },
         { frequency: { n: 2, d: 1 }, amplitude: 1, phase: 0, phantom: true },
       ]);
@@ -84,7 +84,7 @@ describe("ExtendedSpectrum.mul", () => {
     });
 
     test("phantom does not replace non-phantom when frequencies collide", () => {
-      const mixed = new ExtendedSpectrum([
+      const mixed = new SpectrumWithLoudness([
         { frequency: { n: 1, d: 1 }, amplitude: 1, phase: 0, phantom: false },
         { frequency: { n: 2, d: 1 }, amplitude: 1, phase: 0, phantom: true },
       ]);
@@ -106,7 +106,7 @@ describe("ExtendedSpectrum.mul", () => {
 
   describe("edge cases", () => {
     test("throws when other spectrum is empty", () => {
-      const empty = new ExtendedSpectrum();
+      const empty = new SpectrumWithLoudness();
 
       expect(() => sine.mul(empty)).toThrow(
         "Other spectrum has no fundamental (empty or not computable)"
@@ -114,7 +114,7 @@ describe("ExtendedSpectrum.mul", () => {
     });
 
     test("returns empty when this spectrum is empty", () => {
-      const empty = new ExtendedSpectrum();
+      const empty = new SpectrumWithLoudness();
 
       const result = empty.mul(sine);
 

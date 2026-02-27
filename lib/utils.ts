@@ -1,25 +1,11 @@
 import type { Harmonic } from "tuning-core";
-import { NORMALISATION_PRESSURE_UNIT, SETHARES_DISSONANCE_PARAMS } from "./const";
+import { SETHARES_DISSONANCE_PARAMS } from "./const";
+import { getLoudness } from "./loudness";
 import type { DissonanceParams, SetharesDissonanceParams } from "./types";
-import type { ExtendedHarmonic } from "../classes/private/ExtendedHarmonic";
-import { ExtendedSpectrum } from "../classes/private/ExtendedSpectrum";
+import type { HarmonicWithLoudness } from "../classes/private/HarmonicWithLoudness";
+import { SpectrumWithLoudness } from "../classes/private/SpectrumWithLoudness";
 
-
-/**
- * The formula to calculate loudness from amplitude. The converstion to SPL (phons) is done according to Sethares in the appendix "How to Draw Dissonance Curves". The converstion to loudness is done according to https://sengpielaudio.com/calculatorSonephon.htm
- * @param {number} amplitude - the normalized peak value where 0.001 corresponds to SPL of 40 db or 1 sone and 1 to SPL of 100db and 64 sones. Normalisation is done for the simplicity of providing harmonic spectrum with amplitudes 1, 1/2, 1/3, ...
- */
-export function getLoudness(amplitude: number): number {
-    const rms = amplitude / Math.SQRT2;
-    const pressure = rms * NORMALISATION_PRESSURE_UNIT;
-    const referencePressure = 2e-5;
-
-    const phons = 20 * Math.log10(pressure / referencePressure);
-
-    if (phons < 8) return 0;
-    if (phons < 40) return Math.pow(phons / 40, 2.86) - 0.005;
-    return Math.pow(2, (phons - 40) / 10);
-}
+export { getLoudness } from "./loudness";
 
 /** The formula to calculate sensory dissoannce proposed by Sethares in the appendix "How to Draw Dissonance Curves" */
 export function getPlompLeveltDissonance(
@@ -42,8 +28,8 @@ export function getPlompLeveltDissonance(
     if (h1.frequency.equals(h2.frequency)) return 0;
 
     const minLoudness = Math.min(
-        getLoudness(h1.amplitude),
-        getLoudness(h2.amplitude)
+        "loudness" in h1 ? (h1 as HarmonicWithLoudness).loudness : getLoudness(h1.amplitude),
+        "loudness" in h2 ? (h2 as HarmonicWithLoudness).loudness : getLoudness(h2.amplitude)
     );
     if (minLoudness <= 0) return 0;
 
@@ -96,8 +82,8 @@ function thirdOrderDissonance(
  * - Both phantom: thirdOrderDissonance
  */
 export function getSensoryDissonance(
-    h1: ExtendedHarmonic,
-    h2: ExtendedHarmonic,
+    h1: HarmonicWithLoudness,
+    h2: HarmonicWithLoudness,
     params?: DissonanceParams
 ): number {
     if (!h1.phantom && !h2.phantom) {
@@ -113,7 +99,7 @@ export function getSensoryDissonance(
  * Calculate the intrinsic dissonance of a spectrum.
  */
 export function getIntrinsicDissonance(
-    spectrum: ExtendedSpectrum,
+    spectrum: SpectrumWithLoudness,
     params?: DissonanceParams
 ) {
     let dissonance = 0;
@@ -140,13 +126,17 @@ export function getIntrinsicDissonance(
  * 
  * Note: If not proviing secondOrderBeating params is yield the same result as Sethares' TTSS formula.
  * However secondOrderBeating params can be used to finetune the dissoannce perception and account for harmonicity.
+ *
+ * @param precomputedSpectrum1Intrinsic - When provided, use this instead of computing spectrum1's intrinsic dissonance (for performance when spectrum1 is constant across many calls).
  */
 export function getSetharesDissonance(
-    spectrum1: ExtendedSpectrum,
-    spectrum2: ExtendedSpectrum,
-    params?: DissonanceParams
+    spectrum1: SpectrumWithLoudness,
+    spectrum2: SpectrumWithLoudness,
+    params?: DissonanceParams,
+    precomputedSpectrum1Intrinsic?: number
 ) {
-    let dissonance = getIntrinsicDissonance(spectrum1, params) + getIntrinsicDissonance(spectrum2, params);
+    const spectrum1Intrinsic = precomputedSpectrum1Intrinsic ?? getIntrinsicDissonance(spectrum1, params);
+    let dissonance = spectrum1Intrinsic + getIntrinsicDissonance(spectrum2, params);
 
     // loop over all pairs of harmonics between the two spectra (not including reversed pairs)
     for (const h1 of spectrum1.getHarmonics()) {

@@ -46,12 +46,13 @@ function runBenchmarks(): BenchmarkResult[] {
   const options = {
       context: Spectrum.harmonic(6, 440),
       complement: Spectrum.harmonic(6, 440),
-      start: 0.25,
-      end: 4,
+      start: 1,
+      end: 2,
       firstOrderContribution: 1,
       secondOrderContribution: 0.25,
       thirdOrderContribution: 0.1,
       phantomHarmonicsNumber: 3,
+      maxGapCents: 30,
   }
 
   const sampleCurve = new DissonanceCurve(options);

@@ -1,13 +1,12 @@
 import { Fraction, type FractionInput } from "fraction.js";
 import { ratioToCents, Spectrum, IntervalSet } from "tuning-core";
-import { ExtendedIntervalSet } from "./private/ExtendedIntervalSet";
 import type {
     DissonanceParams,
     DissonanceCurvePoint,
     DissonanceCurveData,
 } from "../lib";
-import { getSetharesDissonance } from "../lib";
-import { ExtendedSpectrum } from "./private/ExtendedSpectrum";
+import { getSetharesDissonance, getIntrinsicDissonance } from "../lib";
+import { SpectrumWithLoudness } from "./private/SpectrumWithLoudness";
 
 const DEFAULT_COLUMN_DELIMITER = ",";
 const DEFAULT_ROW_DELIMITER = "\n";
@@ -56,8 +55,8 @@ export class DissonanceCurve {
 
     public start: Fraction;
     public end: Fraction;
-    public context: ExtendedSpectrum;
-    public complement: ExtendedSpectrum;
+    public context: SpectrumWithLoudness;
+    public complement: SpectrumWithLoudness;
     public maxGapCents: number;
     public maxDissonance: number = 0;
 
@@ -71,10 +70,10 @@ export class DissonanceCurve {
             ...dissonanceParams
         } = opts;
 
-        const phantomHarmonics = ExtendedSpectrum.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+        const phantomHarmonics = SpectrumWithLoudness.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
 
-        this.context = new ExtendedSpectrum(context).mul(phantomHarmonics);
-        this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
+        this.context = new SpectrumWithLoudness(context).mul(phantomHarmonics);
+        this.complement = new SpectrumWithLoudness(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
         this.maxGapCents = maxGapCents;
@@ -99,10 +98,10 @@ export class DissonanceCurve {
             ...dissonanceParams
         } = opts;
 
-        const phantomHarmonics = ExtendedSpectrum.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+        const phantomHarmonics = SpectrumWithLoudness.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
 
-        this.context = new ExtendedSpectrum(context).mul(phantomHarmonics);
-        this.complement = new ExtendedSpectrum(complement).mul(phantomHarmonics);
+        this.context = new SpectrumWithLoudness(context).mul(phantomHarmonics);
+        this.complement = new SpectrumWithLoudness(complement).mul(phantomHarmonics);
         this.start = new Fraction(start ?? 1);
         this.end = new Fraction(end ?? 2);
         this.maxGapCents = maxGapCents;
@@ -114,10 +113,11 @@ export class DissonanceCurve {
     }
 
     private getIntervals(): IntervalSet {
-        const intervals = IntervalSet.affinitive(this.context, this.complement)
+        return IntervalSet.affinitive(this.context, this.complement)
             .minMax(this.start, this.end)
-
-        return new ExtendedIntervalSet(intervals.getRatios()).interpolateLog(this.maxGapCents);
+            .add(this.start)
+            .add(this.end)
+            .interpolateLog(this.maxGapCents);
     }
 
     /**
@@ -130,13 +130,16 @@ export class DissonanceCurve {
         const intervals = this.getIntervals();
         const ratios = intervals.getRatios();
 
+        const contextIntrinsic = getIntrinsicDissonance(this.context, dissonanceParams);
+
         for (let i = 0; i < ratios.length; i++) {
             const interval = ratios[i]!;
 
             const dissonance = getSetharesDissonance(
                 this.context,
                 this.complement.toTransposed(interval),
-                dissonanceParams
+                dissonanceParams,
+                contextIntrinsic
             );
 
             if (dissonance > maxDissonance) maxDissonance = dissonance;

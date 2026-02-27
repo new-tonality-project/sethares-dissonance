@@ -1,22 +1,24 @@
 import type { FractionInput } from "fraction.js";
 import { Harmonic, isHarmonicData } from "tuning-core";
 import type { HarmonicData } from "tuning-core";
+import { getLoudness } from "../../lib/loudness";
 
-type ExtendedHarmonicOptions = {
+type HarmonicWithLoudnessOptions = {
   harmonic: Harmonic;
   phantom: boolean;
 };
 
-export type ExtendedHarmonicData = HarmonicData & { phantom?: boolean };
+export type HarmonicWithLoudnessData = HarmonicData & { phantom?: boolean };
 
-export class ExtendedHarmonic extends Harmonic {
+export class HarmonicWithLoudness extends Harmonic {
   public phantom: boolean = false;
+  public loudness: number;
 
-  constructor(options: ExtendedHarmonicOptions);
-  constructor(data: ExtendedHarmonicData);
+  constructor(options: HarmonicWithLoudnessOptions);
+  constructor(data: HarmonicWithLoudnessData);
   constructor(frequency: FractionInput, amplitude?: number, phase?: number, phantom?: boolean);
   constructor(
-    optionsOrDataOrFreq: ExtendedHarmonicOptions | ExtendedHarmonicData | FractionInput,
+    optionsOrDataOrFreq: HarmonicWithLoudnessOptions | HarmonicWithLoudnessData | FractionInput,
     amplitudeOrPhantom?: number,
     phase?: number,
     phantom?: boolean
@@ -26,34 +28,37 @@ export class ExtendedHarmonic extends Harmonic {
       "harmonic" in optionsOrDataOrFreq &&
       optionsOrDataOrFreq.harmonic instanceof Harmonic
     ) {
-      const opts = optionsOrDataOrFreq as ExtendedHarmonicOptions;
+      const opts = optionsOrDataOrFreq as HarmonicWithLoudnessOptions;
       super(opts.harmonic.frequency, opts.harmonic.amplitude, opts.harmonic.phase);
       this.phantom = opts.phantom;
+      this.loudness = getLoudness(opts.harmonic.amplitude);
     } else if (isHarmonicData(optionsOrDataOrFreq)) {
-      const data = optionsOrDataOrFreq as ExtendedHarmonicData;
+      const data = optionsOrDataOrFreq as HarmonicWithLoudnessData;
       super(data);
       this.phantom = data.phantom ?? false;
+      this.loudness = getLoudness(data.amplitude ?? 1);
     } else {
       super(optionsOrDataOrFreq as FractionInput, amplitudeOrPhantom ?? 1, phase ?? 0);
       this.phantom = phantom ?? false;
+      this.loudness = getLoudness(amplitudeOrPhantom ?? 1);
     }
   }
 
-  override clone(): ExtendedHarmonic {
-    return new ExtendedHarmonic({
+  override clone(): HarmonicWithLoudness {
+    return new HarmonicWithLoudness({
       harmonic: new Harmonic(this.frequency, this.amplitude, this.phase),
       phantom: this.phantom,
     });
   }
 
-  override toTransposed(ratio: FractionInput): ExtendedHarmonic {
-    return new ExtendedHarmonic({
+  override toTransposed(ratio: FractionInput): HarmonicWithLoudness {
+    return new HarmonicWithLoudness({
       harmonic: super.toTransposed(ratio),
       phantom: this.phantom,
     });
   }
 
-  override toJSON(): ExtendedHarmonicData {
+  override toJSON(): HarmonicWithLoudnessData {
     return { ...super.toJSON(), phantom: this.phantom };
   }
 }
