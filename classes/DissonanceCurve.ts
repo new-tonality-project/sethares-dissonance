@@ -49,6 +49,9 @@ export type DissonanceCurveOptions = DissonanceParams & {
  * 
  * // Get plot data with cents
  * const plotDataCents = curve.plotCents();
+ *
+ * // Normalize dissonance to 0–1 range (destructive, mutates in place)
+ * curve.normalize();
  * ```
  */
 export class DissonanceCurve {
@@ -173,15 +176,38 @@ export class DissonanceCurve {
     }
 
     /**
+     * Normalize dissonance values in place to the range [0, 1].
+     *
+     * **Destructive:** This method mutates the curve permanently. All dissonance values
+     * are divided by the maximum dissonance, and the original raw values cannot be
+     * recovered. Use {@link recalculate} to rebuild the curve with raw values.
+     *
+     * After normalization, `points`, `get`, `plot`, `plotCents`, `toJSON`, and
+     * `toString` will all return normalized dissonance values (0–1 range).
+     *
+     * @returns `this` for method chaining
+     */
+    normalize(): this {
+        if (this.maxDissonance === 0) return this;
+
+        for (const [key, point] of this._data) {
+            this._data.set(key, {
+                interval: point.interval,
+                dissonance: point.dissonance / this.maxDissonance,
+            });
+        }
+        this.maxDissonance = 1;
+        return this;
+    }
+
+    /**
      * Get plot points with intervals as ratio values (decimal numbers).
      * @returns Array of [ratio, dissonance] tuples suitable for plotting
      */
-    plot(options: { normalize?: boolean } = {}): [number, number][] {
-        const { normalize = false } = options;
-
+    plot(): [number, number][] {
         return this.points.map(({ interval, dissonance }) => [
             interval.valueOf(),
-            normalize ? dissonance / this.maxDissonance : dissonance,
+            dissonance,
         ]);
     }
 
@@ -189,12 +215,10 @@ export class DissonanceCurve {
      * Get plot points with intervals as cents values.
      * @returns Array of [cents, dissonance] tuples suitable for plotting
      */
-    plotCents(options: { normalize?: boolean } = {}): [number, number][] {
-        const { normalize = false } = options;
-
+    plotCents(): [number, number][] {
         return this.points.map(({ interval, dissonance }) => [
             ratioToCents(interval).valueOf(),
-            normalize ? dissonance / this.maxDissonance : dissonance,
+            dissonance,
         ]);
     }
 

@@ -21,6 +21,75 @@ function createTestCurve() {
 }
 
 describe("DissonanceCurve", () => {
+  describe("normalize", () => {
+    test("divides all dissonance values by maxDissonance", () => {
+      const curve = createTestCurve();
+      const maxBefore = curve.maxDissonance;
+      expect(maxBefore).toBeGreaterThan(0);
+
+      curve.normalize();
+
+      expect(curve.maxDissonance).toBe(1);
+      for (const point of curve.points) {
+        expect(point.dissonance).toBeGreaterThanOrEqual(0);
+        expect(point.dissonance).toBeLessThanOrEqual(1);
+      }
+      const maxPoint = curve.points.reduce((a, b) =>
+        a.dissonance >= b.dissonance ? a : b
+      );
+      expect(maxPoint.dissonance).toBe(1);
+    });
+
+    test("returns this for chaining", () => {
+      const curve = createTestCurve();
+      const result = curve.normalize();
+      expect(result).toBe(curve);
+    });
+
+    test("is destructive - plot and toJSON return normalized values", () => {
+      const curve = createTestCurve();
+      const rawMax = curve.maxDissonance;
+
+      curve.normalize();
+
+      const plotData = curve.plot();
+      const jsonData = curve.toJSON();
+
+      expect(plotData[0]![1]).toBeLessThanOrEqual(1);
+      expect(jsonData[0]!.dissonance).toBeLessThanOrEqual(1);
+      expect(curve.maxDissonance).toBe(1);
+    });
+
+    test("is idempotent - calling twice has no further effect", () => {
+      const curve = createTestCurve();
+      curve.normalize();
+      const afterFirst = curve.points.map((p) => p.dissonance);
+
+      curve.normalize();
+      const afterSecond = curve.points.map((p) => p.dissonance);
+
+      expect(afterFirst).toEqual(afterSecond);
+    });
+
+    test("does nothing when maxDissonance is 0", () => {
+      const context = Spectrum.harmonic(1, 440);
+      const complement = Spectrum.harmonic(1, 440);
+      const curve = new DissonanceCurve({
+        context,
+        complement,
+        start: 1,
+        end: 1,
+        maxGapCents: 20,
+      });
+      expect(curve.maxDissonance).toBe(0);
+
+      const result = curve.normalize();
+
+      expect(result).toBe(curve);
+      expect(curve.maxDissonance).toBe(0);
+    });
+  });
+
   describe("findNearestPoint", () => {
     describe("ratios that exist in the curve", () => {
       test("returns exact point when ratio is in curve (number)", () => {
