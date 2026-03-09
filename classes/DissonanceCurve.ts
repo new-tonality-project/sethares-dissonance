@@ -171,10 +171,12 @@ export class DissonanceCurve {
      * Get plot points with intervals as ratio values (decimal numbers).
      * @returns Array of [ratio, dissonance] tuples suitable for plotting
      */
-    plot(): [number, number][] {
+    plot(options: { normalize?: boolean } = {}): [number, number][] {
+        const { normalize = false } = options;
+
         return this.points.map(({ interval, dissonance }) => [
             interval.valueOf(),
-            dissonance,
+            normalize ? dissonance / this.maxDissonance : dissonance,
         ]);
     }
 
@@ -182,10 +184,12 @@ export class DissonanceCurve {
      * Get plot points with intervals as cents values.
      * @returns Array of [cents, dissonance] tuples suitable for plotting
      */
-    plotCents(): [number, number][] {
+    plotCents(options: { normalize?: boolean } = {}): [number, number][] {
+        const { normalize = false } = options;
+
         return this.points.map(({ interval, dissonance }) => [
             ratioToCents(interval).valueOf(),
-            dissonance,
+            normalize ? dissonance / this.maxDissonance : dissonance,
         ]);
     }
 
