@@ -12,9 +12,9 @@ function createTestCurve() {
       complement,
       start: 1,
       end: 2,
-      firstOrderContribution: 1,
-      secondOrderContribution: 0.3,
-      thirdOrderContribution: 0.1,
+      firstOrderDissonance: { magnitude: 1 },
+      secondOrderDissonance: { magnitude: 0.3 },
+      thirdOrderDissonance: { magnitude: 0.1 },
       phantomHarmonicsNumber: 2,
       maxGapCents: 20,
   });

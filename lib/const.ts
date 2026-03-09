@@ -7,4 +7,11 @@ export const SETHARES_DISSONANCE_PARAMS = {
   b1: 3.5,
   b2: 5.75,
   x_star: 0.24,
-};
+  magnitude: 1,
+} as const;
+
+export const DEFAULT_FIRST_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS };
+export const DEFAULT_SECOND_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS, magnitude: 0.25 };
+export const DEFAULT_THIRD_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS, magnitude: 0.1 };
+
+export const DEFAULT_PHANTOM_HARMONICS_NUMBER = 0;

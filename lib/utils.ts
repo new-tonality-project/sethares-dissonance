@@ -1,5 +1,10 @@
 import type { Harmonic } from "tuning-core";
-import { SETHARES_DISSONANCE_PARAMS } from "./const";
+import {
+    DEFAULT_FIRST_ORDER_DISSONANCE_PARAMS,
+    DEFAULT_SECOND_ORDER_DISSONANCE_PARAMS,
+    DEFAULT_THIRD_ORDER_DISSONANCE_PARAMS,
+    SETHARES_DISSONANCE_PARAMS,
+} from "./const";
 import { getLoudness } from "./loudness";
 import type { DissonanceParams, SetharesDissonanceParams } from "./types";
 import type { HarmonicWithLoudness } from "../classes/private/HarmonicWithLoudness";
@@ -11,13 +16,11 @@ export { getLoudness } from "./loudness";
 export function getPlompLeveltDissonance(
     h1: Harmonic,
     h2: Harmonic,
-    params?: SetharesDissonanceParams & {
-        contribution?: number;
-    }
+    params: SetharesDissonanceParams
 ): number {
-    const contribution = params?.contribution ?? 1;
+    const magnitude = params?.magnitude ?? SETHARES_DISSONANCE_PARAMS.magnitude;
 
-    if (contribution <= 0) return 0;
+    if (magnitude <= 0) return 0;
 
     const x_star = params?.x_star ?? SETHARES_DISSONANCE_PARAMS.x_star;
     const s1 = params?.s1 ?? SETHARES_DISSONANCE_PARAMS.s1;
@@ -41,45 +44,18 @@ export function getPlompLeveltDissonance(
     const s = x_star / (s1 * minFrequency + s2);
 
     return (
-        contribution *
+        magnitude *
         minLoudness *
         (Math.exp(-1 * b1 * s * frequencyDifference) -
             Math.exp(-1 * b2 * s * frequencyDifference))
     );
 }
 
-/** For now identical to getPlompLeveltDissonance */
-function firstOrderDissonance(
-    h1: Harmonic,
-    h2: Harmonic,
-    params?: DissonanceParams
-): number {
-    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.firstOrderContribution });
-}
-
-/** For now identical to getPlompLeveltDissonance */
-function secondOrderDissonance(
-    h1: Harmonic,
-    h2: Harmonic,
-    params?: DissonanceParams
-): number {
-    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.secondOrderContribution });
-}
-
-/** For now identical to getPlompLeveltDissonance */
-function thirdOrderDissonance(
-    h1: Harmonic,
-    h2: Harmonic,
-    params?: DissonanceParams
-): number {
-    return getPlompLeveltDissonance(h1, h2, { ...params, contribution: params?.thirdOrderContribution });
-}
-
 /**
  * Find dissonance between two harmonics based on phantom status.
- * - Both non-phantom: firstOrderDissonance
- * - One phantom, one non-phantom: secondOrderDissonance
- * - Both phantom: thirdOrderDissonance
+ * - Both non-phantom: first order
+ * - One phantom, one non-phantom: second order
+ * - Both phantom: third order
  */
 export function getSensoryDissonance(
     h1: HarmonicWithLoudness,
@@ -87,12 +63,21 @@ export function getSensoryDissonance(
     params?: DissonanceParams
 ): number {
     if (!h1.phantom && !h2.phantom) {
-        return firstOrderDissonance(h1, h2, params);
+        return getPlompLeveltDissonance(h1, h2, {
+            ...DEFAULT_FIRST_ORDER_DISSONANCE_PARAMS,
+            ...params?.firstOrderDissonance,
+        });
     }
     if (h1.phantom !== h2.phantom) {
-        return secondOrderDissonance(h1, h2, params);
+        return getPlompLeveltDissonance(h1, h2, {
+            ...DEFAULT_SECOND_ORDER_DISSONANCE_PARAMS,
+            ...params?.secondOrderDissonance,
+        });
     }
-    return thirdOrderDissonance(h1, h2, params);
+    return getPlompLeveltDissonance(h1, h2, {
+        ...DEFAULT_THIRD_ORDER_DISSONANCE_PARAMS,
+        ...params?.thirdOrderDissonance,
+    });
 }
 
 /**

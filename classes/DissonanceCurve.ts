@@ -6,6 +6,7 @@ import type {
     DissonanceCurveData,
 } from "../lib";
 import { getSetharesDissonance, getIntrinsicDissonance } from "../lib";
+import { DEFAULT_PHANTOM_HARMONICS_NUMBER } from "../lib/const";
 import { SpectrumWithLoudness } from "./private/SpectrumWithLoudness";
 
 const DEFAULT_COLUMN_DELIMITER = ",";
@@ -70,7 +71,9 @@ export class DissonanceCurve {
             ...dissonanceParams
         } = opts;
 
-        const phantomHarmonics = SpectrumWithLoudness.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+        const phantomCount =
+            (dissonanceParams.phantomHarmonicsNumber ?? DEFAULT_PHANTOM_HARMONICS_NUMBER) + 1;
+        const phantomHarmonics = SpectrumWithLoudness.harmonic(phantomCount, 1, true);
 
         this.context = new SpectrumWithLoudness(context).mul(phantomHarmonics);
         this.complement = new SpectrumWithLoudness(complement).mul(phantomHarmonics);
@@ -98,7 +101,9 @@ export class DissonanceCurve {
             ...dissonanceParams
         } = opts;
 
-        const phantomHarmonics = SpectrumWithLoudness.harmonic(dissonanceParams.phantomHarmonicsNumber + 1, 1, true);
+        const phantomCount =
+            (dissonanceParams.phantomHarmonicsNumber ?? DEFAULT_PHANTOM_HARMONICS_NUMBER) + 1;
+        const phantomHarmonics = SpectrumWithLoudness.harmonic(phantomCount, 1, true);
 
         this.context = new SpectrumWithLoudness(context).mul(phantomHarmonics);
         this.complement = new SpectrumWithLoudness(complement).mul(phantomHarmonics);

@@ -1,13 +1,16 @@
 import type Fraction from "fraction.js";
 import type { SETHARES_DISSONANCE_PARAMS } from "./const";
 
-export type SetharesDissonanceParams = Partial<typeof SETHARES_DISSONANCE_PARAMS>;
+/** Params for Plomp-Levelt formula; all numeric to allow overrides */
+export type SetharesDissonanceParams = Partial<{
+    [K in keyof typeof SETHARES_DISSONANCE_PARAMS]: number;
+}>;
 
-export type DissonanceParams = SetharesDissonanceParams & {
-  firstOrderContribution: number;
-  secondOrderContribution: number;
-  thirdOrderContribution: number;
-  phantomHarmonicsNumber: number;
+export type DissonanceParams = {
+  firstOrderDissonance?: SetharesDissonanceParams;
+  secondOrderDissonance?: SetharesDissonanceParams;
+  thirdOrderDissonance?: SetharesDissonanceParams;
+  phantomHarmonicsNumber?: number;
 };
 
 export type DissonanceCurvePoint = {
