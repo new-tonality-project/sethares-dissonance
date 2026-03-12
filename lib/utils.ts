@@ -27,6 +27,7 @@ export function getPlompLeveltDissonance(
     const s2 = params?.s2 ?? SETHARES_DISSONANCE_PARAMS.s2;
     const b1 = params?.b1 ?? SETHARES_DISSONANCE_PARAMS.b1;
     const b2 = params?.b2 ?? SETHARES_DISSONANCE_PARAMS.b2;
+    const magnitudeFrequencyDecay = params?.magnitudeFrequencyDecay ?? SETHARES_DISSONANCE_PARAMS.magnitudeFrequencyDecay;
 
     if (h1.frequency.equals(h2.frequency)) return 0;
 
@@ -39,12 +40,14 @@ export function getPlompLeveltDissonance(
     const minFrequency = Math.min(h1.frequencyNum, h2.frequencyNum);
 
     if (minFrequency <= 0) return 0;
-
+    
+    const magnitudeDecayFactor = Math.exp(-magnitudeFrequencyDecay * (minFrequency / 1000));
     const frequencyDifference = Math.abs(h1.frequencyNum - h2.frequencyNum);
     const s = x_star / (s1 * minFrequency + s2);
 
     return (
         magnitude *
+        magnitudeDecayFactor *
         minLoudness *
         (Math.exp(-1 * b1 * s * frequencyDifference) -
             Math.exp(-1 * b2 * s * frequencyDifference))

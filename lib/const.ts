@@ -8,6 +8,8 @@ export const SETHARES_DISSONANCE_PARAMS = {
   b2: 5.75,
   x_star: 0.24,
   magnitude: 1,
+  /** At 0: no decay (constant magnitude). Higher values = faster decay with minFrequency. */
+  magnitudeFrequencyDecay: 0,
 } as const;
 
 export const DEFAULT_FIRST_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS };
