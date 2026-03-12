@@ -71,6 +71,50 @@ describe("DissonanceCurve", () => {
       expect(afterFirst).toEqual(afterSecond);
     });
 
+    test("actual max coincides with provided max", () => {
+      const curve = createTestCurve();
+      curve.normalize();
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(1);
+    });
+
+    test("actual max coincides with provided max (0, 100)", () => {
+      const curve = createTestCurve();
+      curve.normalize(0, 100);
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(100);
+    });
+
+    test("actual max coincides with provided max (10, 90)", () => {
+      const curve = createTestCurve();
+      curve.normalize(10, 90);
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(90);
+    });
+
+    test("for single sine wave both min and max coincide with provided range", () => {
+      const context = Spectrum.harmonic(1, 440);
+      const complement = Spectrum.harmonic(1, 440);
+      const curve = new DissonanceCurve({
+        context,
+        complement,
+        start: 1,
+        end: 2,
+        maxGapCents: 20,
+      });
+
+      curve.normalize(0, 1);
+
+      const actualMin = Math.min(...curve.points.map((p) => p.dissonance));
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+
+      expect(actualMin).toBe(0);
+      expect(actualMax).toBe(1);
+    });
+
     test("does nothing when maxDissonance is 0", () => {
       const context = Spectrum.harmonic(1, 440);
       const complement = Spectrum.harmonic(1, 440);

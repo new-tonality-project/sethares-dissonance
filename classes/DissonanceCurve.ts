@@ -176,27 +176,31 @@ export class DissonanceCurve {
     }
 
     /**
-     * Normalize dissonance values in place to the range [0, 1].
+     * Normalize dissonance values in place to a target range.
      *
      * **Destructive:** This method mutates the curve permanently. All dissonance values
-     * are divided by the maximum dissonance, and the original raw values cannot be
-     * recovered. Use {@link recalculate} to rebuild the curve with raw values.
+     * are scaled from [0, maxDissonance] to [min, max], and the original raw values
+     * cannot be recovered. Use {@link recalculate} to rebuild the curve with raw values.
      *
      * After normalization, `points`, `get`, `plot`, `plotCents`, `toJSON`, and
-     * `toString` will all return normalized dissonance values (0–1 range).
+     * `toString` will all return normalized dissonance values in the [min, max] range.
      *
+     * @param min - Target minimum value (default: 0)
+     * @param max - Target maximum value (default: 1)
      * @returns `this` for method chaining
      */
-    normalize(): this {
+    normalize(min = 0, max = 1): this {
+        if (max <= min) throw new Error('max must be greater than min');
         if (this.maxDissonance === 0) return this;
 
+        const range = max - min;
         for (const [key, point] of this._data) {
             this._data.set(key, {
                 interval: point.interval,
-                dissonance: point.dissonance / this.maxDissonance,
+                dissonance: (point.dissonance / this.maxDissonance) * range + min,
             });
         }
-        this.maxDissonance = 1;
+        this.maxDissonance = max;
         return this;
     }
 
