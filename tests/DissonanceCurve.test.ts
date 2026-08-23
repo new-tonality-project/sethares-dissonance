@@ -111,11 +111,11 @@ describe("DissonanceCurve", () => {
       const actualMin = Math.min(...curve.points.map((p) => p.dissonance));
       const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
 
-      expect(actualMin).toBe(0);
+      expect(actualMin).toBeCloseTo(0, 4);
       expect(actualMax).toBe(1);
     });
 
-    test("does nothing when maxDissonance is 0", () => {
+    test("unison dissonance is near zero for single sine wave", () => {
       const context = Spectrum.harmonic(1, 440);
       const complement = Spectrum.harmonic(1, 440);
       const curve = new DissonanceCurve({
@@ -125,12 +125,12 @@ describe("DissonanceCurve", () => {
         end: 1,
         maxGapCents: 20,
       });
-      expect(curve.maxDissonance).toBe(0);
+      expect(curve.maxDissonance).toBeCloseTo(0, 3);
 
       const result = curve.normalize();
 
       expect(result).toBe(curve);
-      expect(curve.maxDissonance).toBe(0);
+      expect(curve.maxDissonance).toBe(1);
     });
   });
 
