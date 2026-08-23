@@ -67,6 +67,21 @@ export class SpectrumWithLoudness extends Spectrum {
   override get(frequency: FractionInput): HarmonicWithLoudness | undefined {
     return super.get(frequency) as HarmonicWithLoudness | undefined;
   }
+  
+  static override fromFrequencies(frequencies: FractionInput[], amplitudes?: number[], phases?: number[]): SpectrumWithLoudness {
+    const spectrum = new SpectrumWithLoudness()
+
+    for (let i = 0; i < frequencies.length; i++) {
+      spectrum.add(new HarmonicWithLoudness(
+        frequencies[i]!,
+        amplitudes?.[i]! ?? 1,
+        phases?.[i]! ?? 0,
+        false
+      ))
+    }
+
+    return spectrum
+  }
 
   /**
  * Multiply this spectrum by another spectrum.
@@ -123,6 +138,17 @@ export class SpectrumWithLoudness extends Spectrum {
 
   static override harmonic(count: number, fundamentalHz: FractionInput, phantom?: boolean): SpectrumWithLoudness {
     const spectrum = super.harmonic(count, fundamentalHz)
+    const result = new SpectrumWithLoudness();
+
+    for (const harmonic of spectrum.getHarmonics()) {
+      result.add(new HarmonicWithLoudness({ harmonic, phantom: phantom ?? false }));
+    }
+
+    return result;
+  }
+
+  static override stretched(count: number, fundamentalHz: FractionInput, pseudoOctaveRatio: FractionInput, phantom?: boolean): SpectrumWithLoudness {
+    const spectrum = super.stretched(count, fundamentalHz, pseudoOctaveRatio)
     const result = new SpectrumWithLoudness();
 
     for (const harmonic of spectrum.getHarmonics()) {
