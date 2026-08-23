@@ -8,10 +8,19 @@ export const SETHARES_DISSONANCE_PARAMS = {
   b2: 5.75,
   x_star: 0.24,
   magnitude: 1,
+  /** At 0: no decay (constant magnitude). Higher values = faster decay with minFrequency. */
+  magnitudeFrequencyDecay: 0,
+  /** At 0: flat (no mid-frequency notch). At 1: full cut at the notch center. */
+  phantomNotchDepth: 0,
 } as const;
 
 export const DEFAULT_FIRST_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS };
-export const DEFAULT_SECOND_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS, magnitude: 0.25 };
-export const DEFAULT_THIRD_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS, magnitude: 0.1 };
+export const DEFAULT_SECOND_ORDER_DISSONANCE_PARAMS = { ...SETHARES_DISSONANCE_PARAMS, magnitude: 0.75, magnitudeFrequencyDecay: 0.75 };
+export const DEFAULT_THIRD_ORDER_DISSONANCE_PARAMS = {
+  ...SETHARES_DISSONANCE_PARAMS,
+  magnitude: 0.5,
+  magnitudeFrequencyDecay: 0,
+  phantomNotchDepth: 1,
+};
 
-export const DEFAULT_PHANTOM_HARMONICS_NUMBER = 0;
+export const DEFAULT_PHANTOM_HARMONICS_NUMBER = 3;

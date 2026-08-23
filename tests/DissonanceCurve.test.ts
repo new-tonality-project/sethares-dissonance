@@ -71,7 +71,51 @@ describe("DissonanceCurve", () => {
       expect(afterFirst).toEqual(afterSecond);
     });
 
-    test("does nothing when maxDissonance is 0", () => {
+    test("actual max coincides with provided max", () => {
+      const curve = createTestCurve();
+      curve.normalize();
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(1);
+    });
+
+    test("actual max coincides with provided max (0, 100)", () => {
+      const curve = createTestCurve();
+      curve.normalize(0, 100);
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(100);
+    });
+
+    test("actual max coincides with provided max (10, 90)", () => {
+      const curve = createTestCurve();
+      curve.normalize(10, 90);
+
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+      expect(actualMax).toBe(90);
+    });
+
+    test("for single sine wave both min and max coincide with provided range", () => {
+      const context = Spectrum.harmonic(1, 440);
+      const complement = Spectrum.harmonic(1, 440);
+      const curve = new DissonanceCurve({
+        context,
+        complement,
+        start: 1,
+        end: 2,
+        maxGapCents: 20,
+      });
+
+      curve.normalize(0, 1);
+
+      const actualMin = Math.min(...curve.points.map((p) => p.dissonance));
+      const actualMax = Math.max(...curve.points.map((p) => p.dissonance));
+
+      expect(actualMin).toBeCloseTo(0, 4);
+      expect(actualMax).toBe(1);
+    });
+
+    test("unison dissonance is near zero for single sine wave", () => {
       const context = Spectrum.harmonic(1, 440);
       const complement = Spectrum.harmonic(1, 440);
       const curve = new DissonanceCurve({
@@ -81,12 +125,12 @@ describe("DissonanceCurve", () => {
         end: 1,
         maxGapCents: 20,
       });
-      expect(curve.maxDissonance).toBe(0);
+      expect(curve.maxDissonance).toBeCloseTo(0, 3);
 
       const result = curve.normalize();
 
       expect(result).toBe(curve);
-      expect(curve.maxDissonance).toBe(0);
+      expect(curve.maxDissonance).toBe(1);
     });
   });
 

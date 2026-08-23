@@ -1,11 +1,12 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "sethares-dissonance",
       "dependencies": {
         "fraction.js": "^5.3.4",
-        "tuning-core": "^1.0.3",
+        "tuning-core": "^1.5.2",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -24,7 +25,7 @@
 
     "fraction.js": ["fraction.js@5.3.4", "", {}, "sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ=="],
 
-    "tuning-core": ["tuning-core@1.0.3", "", { "dependencies": { "fraction.js": "^5.3.4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-tX7BCwYqQSaJ7dqYVHB+HF4w8qD7fzLb5GZMX2A4a8NsttQ61UCENNhjf3CFuVCWt49H3/pgkdlyW93XGOjQDw=="],
+    "tuning-core": ["tuning-core@1.5.2", "", { "dependencies": { "fraction.js": "^5.3.4" }, "peerDependencies": { "typescript": "^5" } }, "sha512-+Svqf/w0fu12aDqmTNVSli7N7MLzIc/FC0Z/NXhMXcfcM+WLA/w3vMMdDccBcL6CwFkCjyUV0k6Tkfk3RZ9qGQ=="],
 
     "typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 

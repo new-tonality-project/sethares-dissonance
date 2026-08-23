@@ -12,11 +12,28 @@ import { SpectrumWithLoudness } from "../classes/private/SpectrumWithLoudness";
 
 export { getLoudness } from "./loudness";
 
+export function getExponentialMagnitudeDecayFactor(minFrequency: number, decay: number): number {
+    return Math.exp(-decay * (minFrequency / 1000));
+}
+
+/** Third-order (both phantom): log-Gaussian notch. Lower q = narrower notch. */
+const PHANTOM_NOTCH_CENTER_HZ = 880;
+const PHANTOM_NOTCH_Q = 0.75;
+/** Transposes notch for 2nd×3rd phantom pairs: 1760 Hz max → 880 Hz effective center. */
+const PHANTOM_NOTCH_FREQUENCY_MULTIPLIER = 2;
+
+export function getGaussianNotchMagnitudeDecayFactor(maxFrequency: number, depth: number): number {
+    if (depth <= 0) return 1;
+    const logRatio = Math.log(maxFrequency / (PHANTOM_NOTCH_CENTER_HZ * PHANTOM_NOTCH_FREQUENCY_MULTIPLIER));
+    const notchShape = Math.exp(-(logRatio ** 2) / (2 * PHANTOM_NOTCH_Q ** 2));
+    return 1 - depth * notchShape;
+}
+
 /** The formula to calculate sensory dissoannce proposed by Sethares in the appendix "How to Draw Dissonance Curves" */
 export function getPlompLeveltDissonance(
     h1: Harmonic,
     h2: Harmonic,
-    params: SetharesDissonanceParams
+    params: SetharesDissonanceParams,
 ): number {
     const magnitude = params?.magnitude ?? SETHARES_DISSONANCE_PARAMS.magnitude;
 
@@ -27,6 +44,8 @@ export function getPlompLeveltDissonance(
     const s2 = params?.s2 ?? SETHARES_DISSONANCE_PARAMS.s2;
     const b1 = params?.b1 ?? SETHARES_DISSONANCE_PARAMS.b1;
     const b2 = params?.b2 ?? SETHARES_DISSONANCE_PARAMS.b2;
+    const magnitudeFrequencyDecay = params?.magnitudeFrequencyDecay ?? SETHARES_DISSONANCE_PARAMS.magnitudeFrequencyDecay;
+    const phantomNotchDepth = params?.phantomNotchDepth ?? SETHARES_DISSONANCE_PARAMS.phantomNotchDepth;
 
     if (h1.frequency.equals(h2.frequency)) return 0;
 
@@ -37,14 +56,19 @@ export function getPlompLeveltDissonance(
     if (minLoudness <= 0) return 0;
 
     const minFrequency = Math.min(h1.frequencyNum, h2.frequencyNum);
+    const maxFrequency = Math.max(h1.frequencyNum, h2.frequencyNum);
 
     if (minFrequency <= 0) return 0;
 
+    const magnitudeDecayFactor =
+        getExponentialMagnitudeDecayFactor(minFrequency, magnitudeFrequencyDecay) *
+        getGaussianNotchMagnitudeDecayFactor(maxFrequency, phantomNotchDepth);
     const frequencyDifference = Math.abs(h1.frequencyNum - h2.frequencyNum);
     const s = x_star / (s1 * minFrequency + s2);
 
     return (
         magnitude *
+        magnitudeDecayFactor *
         minLoudness *
         (Math.exp(-1 * b1 * s * frequencyDifference) -
             Math.exp(-1 * b2 * s * frequencyDifference))
